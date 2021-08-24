@@ -35,15 +35,12 @@ type ledger struct {
 func (l *ledger) Wants(k cid.Cid, priority int32, wantType pb.Message_Wantlist_WantType) {
 
 	fmt.Print("---ledger.go...Wants---\n")
-	fmt.Print(" peer ",l.Partner," wants ",k,"\n")
+	fmt.Print(" peer ", l.Partner, " wants ", k, "\n")
 	fmt.Print("\n")
 
-
 	// to save in CSV file:
-
 	//////////////////////////////////////////////////////////////////
 	//Create Data Array to Write to CSV File
-
 	t := time.Now()
 	timeStamp := fmt.Sprint(t.Format("2006-01-02 15:04:05"))
 
@@ -51,29 +48,70 @@ func (l *ledger) Wants(k cid.Cid, priority int32, wantType pb.Message_Wantlist_W
 	peerid := fmt.Sprint(l.Partner)
 
 	data := [][]string{
-		{"peerID","CID","timestamp"},
-		{cid,peerid,timeStamp},
+		{peerid, cid, timeStamp},
+	}
+	headers := [][]string{
+		{"peerID", "CID", "timestamp"},
+	}
+
+	// check if file exists
+	// if yes, then dont write headers
+	// if no, then write headers
+	info, err := os.Stat("records.csv")
+	if os.IsNotExist(err) { // if file doesnt exists
+		// Create CSV File
+		file, err := os.OpenFile("records.csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		defer file.Close()
+		if err != nil {
+			println("failed to open file", err)
 		}
-	//fmt.Print(data)
+		w := csv.NewWriter(file)
+		defer w.Flush()
+		// Write headers to CSV File
+		err = w.WriteAll(headers)
+		if err != nil {
+			fmt.Println(err)
+		}
+		// Write data to CSV File
+		err = w.WriteAll(data)
+		if err != nil {
+			fmt.Println(err)
+		}
 
+	} else { // if file exists
+		// Create CSV File
+		file, err := os.OpenFile("records.csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		defer file.Close()
+		if err != nil {
+			println("failed to open file", err)
+		}
+		w := csv.NewWriter(file)
+		defer w.Flush()
+		// Write data to CSV File
+		err = w.WriteAll(data)
+		if err != nil {
+			fmt.Println(err)
+		}
 
+	}
+	println("ignore:",info)
+	/*
 	// Create CSV File
-	file, err := os.Create("records.csv")
+	file, err := os.OpenFile("records.csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer file.Close()
 	if err != nil {
 		println("failed to open file", err)
 	}
-
 	w := csv.NewWriter(file)
 	defer w.Flush()
-
 	// Write Data to CSV File
-	err = w.WriteAll(data)
+	err = w.WriteAll(headers)
 	if err != nil {
 		fmt.Println(err)
 	}
 	//////////////////////////////////////////////////////////////////
 
+	 */
 
 	log.Debugf("peer %s wants %s", l.Partner, k)
 	l.wantList.Add(k, priority, wantType)
