@@ -3,10 +3,8 @@ package bitswap
 import (
 	"context"
 	"fmt"
-	"time"
 
 	engine "github.com/ipfs/go-bitswap/internal/decision"
-	"github.com/ipfs/go-bitswap/internal/defaults"
 	pb "github.com/ipfs/go-bitswap/message/pb"
 	cid "github.com/ipfs/go-cid"
 	process "github.com/jbenet/goprocess"
@@ -14,10 +12,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// TaskWorkerCount is the total number of simultaneous threads sending
+// outgoing messages
+var TaskWorkerCount = 8
+
 func (bs *Bitswap) startWorkers(ctx context.Context, px process.Process) {
 
+	//println("---workers.go...startWorkers---")
+
 	// Start up workers to handle requests from other nodes for the data on this node
-	for i := 0; i < bs.taskWorkerCount; i++ {
+	for i := 0; i < TaskWorkerCount; i++ {
 		i := i
 		px.Go(func(px process.Process) {
 			bs.taskWorker(ctx, i)
@@ -50,8 +54,6 @@ func (bs *Bitswap) taskWorker(ctx context.Context, id int) {
 					continue
 				}
 
-				start := time.Now()
-
 				// TODO: Only record message as sent if there was no error?
 				// Ideally, yes. But we'd need some way to trigger a retry and/or drop
 				// the peer.
@@ -60,10 +62,6 @@ func (bs *Bitswap) taskWorker(ctx context.Context, id int) {
 					bs.wiretap.MessageSent(envelope.Peer, envelope.Message)
 				}
 				bs.sendBlocks(ctx, envelope)
-
-				dur := time.Since(start)
-				bs.sendTimeHistogram.Observe(dur.Seconds())
-
 			case <-ctx.Done():
 				return
 			}
@@ -74,6 +72,9 @@ func (bs *Bitswap) taskWorker(ctx context.Context, id int) {
 }
 
 func (bs *Bitswap) logOutgoingBlocks(env *engine.Envelope) {
+
+	//println("###workers.go...logOutgoingBlocks###")
+
 	if ce := sflog.Check(zap.DebugLevel, "sent message"); ce == nil {
 		return
 	}
@@ -84,6 +85,18 @@ func (bs *Bitswap) logOutgoingBlocks(env *engine.Envelope) {
 		c := blockPresence.Cid
 		switch blockPresence.Type {
 		case pb.Message_Have:
+
+			/*
+			fmt.Print("sent message",
+				"type", "HAVE",
+				"cid", c,
+				"local", self,
+				"to", env.Peer,
+			)
+			println("\n")
+
+			 */
+
 			log.Debugw("sent message",
 				"type", "HAVE",
 				"cid", c,
@@ -91,6 +104,18 @@ func (bs *Bitswap) logOutgoingBlocks(env *engine.Envelope) {
 				"to", env.Peer,
 			)
 		case pb.Message_DontHave:
+
+			/*
+			fmt.Print("sent message",
+				"type", "DONT_HAVE",
+				"cid", c,
+				"local", self,
+				"to", env.Peer,
+			)
+			println("\n")
+
+			 */
+
 			log.Debugw("sent message",
 				"type", "DONT_HAVE",
 				"cid", c,
@@ -113,12 +138,24 @@ func (bs *Bitswap) logOutgoingBlocks(env *engine.Envelope) {
 }
 
 func (bs *Bitswap) sendBlocks(ctx context.Context, env *engine.Envelope) {
+
+	//println("###workers.go...sendBlocks###")
+
 	// Blocks need to be sent synchronously to maintain proper backpressure
 	// throughout the network stack
 	defer env.Sent()
 
 	err := bs.network.SendMessage(ctx, env.Peer, env.Message)
 	if err != nil {
+
+		/*
+		fmt.Print("failed to send blocks message",
+			"peer", env.Peer,
+			"error", err)
+		println("\n")
+
+		 */
+
 		log.Debugw("failed to send blocks message",
 			"peer", env.Peer,
 			"error", err,
@@ -138,6 +175,10 @@ func (bs *Bitswap) sendBlocks(ctx context.Context, env *engine.Envelope) {
 	bs.counters.dataSent += uint64(dataSent)
 	bs.counterLk.Unlock()
 	bs.sentHistogram.Observe(float64(env.Message.Size()))
+
+	//fmt.Print("sent message", "peer", env.Peer)
+	//println("\n")
+
 	log.Debugw("sent message", "peer", env.Peer)
 }
 
@@ -163,7 +204,7 @@ func (bs *Bitswap) provideWorker(px process.Process) {
 		log.Debugw("Bitswap.ProvideWorker.Start", "ID", wid, "cid", k)
 		defer log.Debugw("Bitswap.ProvideWorker.End", "ID", wid, "cid", k)
 
-		ctx, cancel := context.WithTimeout(ctx, defaults.ProvideTimeout) // timeout ctx
+		ctx, cancel := context.WithTimeout(ctx, provideTimeout) // timeout ctx
 		defer cancel()
 
 		if err := bs.network.Provide(ctx, k); err != nil {
