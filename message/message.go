@@ -114,6 +114,22 @@ func (e *Entry) Size() int {
 
 // Get the entry in protobuf form
 func (e *Entry) ToPB() pb.Message_Wantlist_Entry {
+
+	/*
+	println("---message.go...ToPB---")
+	fmt.Print("CID: ",pb.Message_Wantlist_Entry{
+		Block:        pb.Cid{Cid: e.Cid}},
+		"\nPriority: ",pb.Message_Wantlist_Entry{
+			Priority:     int32(e.Priority)},
+			"\nCancel: ",pb.Message_Wantlist_Entry{
+			Cancel:       e.Cancel},
+			"\nWantType: ",pb.Message_Wantlist_Entry{
+			WantType:     e.WantType},
+			"\nSendDontHave: ",pb.Message_Wantlist_Entry{
+			SendDontHave: e.SendDontHave})
+	println("\n")
+	 */
+
 	return pb.Message_Wantlist_Entry{
 		Block:        pb.Cid{Cid: e.Cid},
 		Priority:     int32(e.Priority),
@@ -253,10 +269,17 @@ func (m *impl) Empty() bool {
 }
 
 func (m *impl) Wantlist() []Entry {
+
+	//println("---message.go...Wantlist---")
+
 	out := make([]Entry, 0, len(m.wantlist))
 	for _, e := range m.wantlist {
 		out = append(out, *e)
 	}
+
+	//println("want list: ")
+	//fmt.Print(out)
+	//println("\n")
 	return out
 }
 
@@ -281,6 +304,8 @@ func (m *impl) Haves() []cid.Cid {
 }
 
 func (m *impl) DontHaves() []cid.Cid {
+	println("\n")
+
 	return m.getBlockPresenceByType(pb.Message_DontHave)
 }
 
@@ -347,7 +372,6 @@ func (m *impl) addEntry(c cid.Cid, priority int32, cancel bool, wantType pb.Mess
 		Cancel:       cancel,
 	}
 	m.wantlist[c] = e
-
 	return e.Size()
 }
 
