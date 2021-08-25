@@ -445,21 +445,19 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 				if et.WantType == pb.Message_Wantlist_Have {
 					log.Debugw("Bitswap engine <- want-have", "local", e.self, "from", p, "cid", et.Cid)
 
-					//println("#### Discovery")
+					println("#### Discovery - Bitswap")
 					//println("broadcasting a `want-have` message to all peers i am connected to, asking if they have the block")
 					//println("any peers that have the block respond with a `HAVE` message and get added to the session")
 					//println("if no connected peers have the block, Bitswap queries the DHT to find peers that have the block")
-					fmt.Print("Bitswap\n")
-					fmt.Print("Bitswap engine <- want-have ", "local ", e.self, " from ", p, " cid ", et.Cid)
+					fmt.Print("want-have "," from ", p, " cid ", et.Cid)
 					fmt.Print("\n")
 
 				} else {
 					log.Debugw("Bitswap engine <- want-block", "local", e.self, "from", p, "cid", et.Cid)
 
-					//println("### Wants")
+					println("### Wants - Bitswap")
 					//println("sending a `want-block` message to one of the peers in the Session to request the block")
-					fmt.Print("DHT\n")
-					fmt.Print("Bitswap engine <- want-block ", " local ", e.self, " from ", p, " cid ", et.Cid)
+					fmt.Print("want-block "," from ", p, " cid ", et.Cid)
 					fmt.Print("\n")
 				}
 			}
@@ -523,7 +521,7 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 		if !found {
 			fmt.Print("-block not found-\n")
 			log.Debugw("Bitswap engine: block not found", "local", e.self, "from", p, "cid", entry.Cid, "sendDontHave", entry.SendDontHave)
-			fmt.Print("Bitswap engine: block not found ", " local ", e.self, " from ", p, " cid ", entry.Cid, " sendDontHave ", entry.SendDontHave)
+			fmt.Print("block not found "," from ", p, " cid ", entry.Cid, " sendDontHave ", entry.SendDontHave)
 			fmt.Print("\n")
 
 			// Only add the task to the queue if the requester wants a DONT_HAVE
@@ -555,7 +553,7 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 			isWantBlock := e.sendAsBlock(entry.WantType, blockSize)
 
 			log.Debugw("Bitswap engine: block found", "local", e.self, "from", p, "cid", entry.Cid, "isWantBlock", isWantBlock)
-			fmt.Print("Bitswap engine: block found ", " local ", e.self, " from ", p, " cid ", entry.Cid, " isWantBlock ", isWantBlock)
+			fmt.Print("block found "," from ", p, " cid ", entry.Cid, " isWantBlock ", isWantBlock)
 			fmt.Print("\n")
 
 			// entrySize is the amount of space the entry takes up in the
