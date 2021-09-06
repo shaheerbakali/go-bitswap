@@ -209,6 +209,8 @@ func newEngine(bs bstore.Blockstore, bstoreWorkerCount int, peerTagger PeerTagge
 // Older versions of Bitswap did not respond, so this allows us to simulate
 // those older versions for testing.
 func (e *Engine) SetSendDontHaves(send bool) {
+	fmt.Print("---engine.go...SetSendDontHaves---\n")
+	fmt.Print("block not in blockstore\n")
 	e.sendDontHaves = send
 }
 
@@ -252,8 +254,8 @@ func (e *Engine) onPeerRemoved(p peer.ID) {
 
 // WantlistForPeer returns the list of keys that the given peer has asked for
 func (e *Engine) WantlistForPeer(p peer.ID) []wl.Entry {
-	//println("---engine.go...WantlistForPeer!---")
-	//println("returns the list of keys that the given peer has asked for")
+	fmt.Print("---engine.go...WantlistForPeer!---\n")
+	fmt.Print("returns the list of keys that the given peer has asked for\n")
 
 	partner := e.findOrCreate(p)
 
@@ -263,15 +265,16 @@ func (e *Engine) WantlistForPeer(p peer.ID) []wl.Entry {
 
 	wl.SortEntries(entries)
 
-	//println("peer: ",p)
-	//println("entries: ",entries)
+	fmt.Print("peer: ",p,"\n")
+	fmt.Print("entries: ",entries,"\n")
 	return entries
 }
 
 // LedgerForPeer returns aggregated data communication with a given peer.
 func (e *Engine) LedgerForPeer(p peer.ID) *Receipt {
-	//println("---engine.go...LedgerForPeer!---")
-	//println(e.scoreLedger.GetReceipt(p))
+	fmt.Print("---engine.go...LedgerForPeer!---\n")
+	fmt.Print("returns aggregated data communication with a given peer\n")
+	fmt.Print(e.scoreLedger.GetReceipt(p),"\n")
 	return e.scoreLedger.GetReceipt(p)
 }
 
@@ -313,6 +316,9 @@ func (e *Engine) taskWorkerExit() {
 // nextEnvelope runs in the taskWorker goroutine. Returns an error if the
 // context is cancelled before the next Envelope can be created.
 func (e *Engine) nextEnvelope(ctx context.Context) (*Envelope, error) {
+
+	fmt.Print("---engine.go - nextEnvelope---\n")
+
 	for {
 		// Pop some tasks off the request queue
 		p, nextTasks, pendingBytes := e.peerRequestQueue.PopTasks(targetMessageSize)
@@ -360,6 +366,8 @@ func (e *Engine) nextEnvelope(ctx context.Context) (*Envelope, error) {
 		}
 
 		// Fetch blocks from datastore
+		fmt.Print("Fetch blocks from datastore\n")
+		fmt.Print("blockCids: ",blockCids,"\n")
 		blks, err := e.bsm.getBlocks(ctx, blockCids)
 		if err != nil {
 			// we're dropping the envelope but that's not an issue in practice.
@@ -426,7 +434,7 @@ func (e *Engine) Peers() []peer.ID {
 // request queue (this is later popped off by the workerTasks)
 func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwapMessage) {
 
-	fmt.Print("---engine.go...MessageReceived!---\n")
+	//fmt.Print("---engine.go...MessageReceived!---\n")
 
 	entries := m.Wantlist()
 
@@ -445,20 +453,20 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 				if et.WantType == pb.Message_Wantlist_Have {
 					log.Debugw("Bitswap engine <- want-have", "local", e.self, "from", p, "cid", et.Cid)
 
-					println("#### Discovery - Bitswap")
+					//println("#### Discovery - Bitswap")
 					//println("broadcasting a `want-have` message to all peers i am connected to, asking if they have the block")
 					//println("any peers that have the block respond with a `HAVE` message and get added to the session")
 					//println("if no connected peers have the block, Bitswap queries the DHT to find peers that have the block")
-					fmt.Print("want-have "," from ", p, " cid ", et.Cid)
-					fmt.Print("\n")
+					//fmt.Print("want-have "," from ", p, " cid ", et.Cid)
+					//fmt.Print("\n")
 
 				} else {
 					log.Debugw("Bitswap engine <- want-block", "local", e.self, "from", p, "cid", et.Cid)
 
-					println("### Wants - Bitswap")
+					//println("### Wants - Bitswap")
 					//println("sending a `want-block` message to one of the peers in the Session to request the block")
-					fmt.Print("want-block "," from ", p, " cid ", et.Cid)
-					fmt.Print("\n")
+					//fmt.Print("want-block "," from ", p, " cid ", et.Cid)
+					//fmt.Print("\n")
 				}
 			}
 		}
@@ -519,10 +527,10 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 
 		// If the block was not found
 		if !found {
-			fmt.Print("-block not found-\n")
+			//fmt.Print("-block not found-\n")
 			log.Debugw("Bitswap engine: block not found", "local", e.self, "from", p, "cid", entry.Cid, "sendDontHave", entry.SendDontHave)
-			fmt.Print("block not found "," from ", p, " cid ", entry.Cid, " sendDontHave ", entry.SendDontHave)
-			fmt.Print("\n")
+			//fmt.Print("block not found "," from ", p, " cid ", entry.Cid, " sendDontHave ", entry.SendDontHave)
+			//fmt.Print("\n")
 
 			// Only add the task to the queue if the requester wants a DONT_HAVE
 			if e.sendDontHaves && entry.SendDontHave {
@@ -605,7 +613,11 @@ func (e *Engine) splitWantsCancels(es []bsmsg.Entry) ([]bsmsg.Entry, []bsmsg.Ent
 // This function also updates the receive side of the ledger.
 func (e *Engine) ReceiveFrom(from peer.ID, blks []blocks.Block, haves []cid.Cid) {
 
-	//println("---engine.go...ReceiveFrom---")
+	fmt.Print("---engine.go...ReceiveFrom---\n")
+	fmt.Print("called when new blocks are received and added to the block store\n")
+	fmt.Print("from: ",from,"\n")
+	fmt.Print("blks: ",blks,"\n")
+	fmt.Print("haves: ",haves,"\n")
 
 	if len(blks) == 0 {
 		return
@@ -686,7 +698,10 @@ func (e *Engine) ReceiveFrom(from peer.ID, blks []blocks.Block, haves []cid.Cid)
 // MessageSent is called when a message has successfully been sent out, to record
 // changes.
 func (e *Engine) MessageSent(p peer.ID, m bsmsg.BitSwapMessage) {
-	//println("---engine.go...MessageSent---")
+
+	fmt.Print("---engine.go...MessageSent---\n")
+	fmt.Print("peerID: ",p,"\n")
+
 
 	l := e.findOrCreate(p)
 	l.lk.Lock()
@@ -696,6 +711,7 @@ func (e *Engine) MessageSent(p peer.ID, m bsmsg.BitSwapMessage) {
 	for _, block := range m.Blocks() {
 		e.scoreLedger.AddToSentBytes(l.Partner, len(block.RawData()))
 		l.wantList.RemoveType(block.Cid(), pb.Message_Wantlist_Block)
+		fmt.Print("block.Cid(): ",block.Cid(),"\n")
 	}
 
 	// Remove sent block presences from the want list for the peer
@@ -703,6 +719,7 @@ func (e *Engine) MessageSent(p peer.ID, m bsmsg.BitSwapMessage) {
 		// Don't record sent data. We reserve that for data blocks.
 		if bp.Type == pb.Message_Have {
 			l.wantList.RemoveType(bp.Cid, pb.Message_Wantlist_Have)
+			fmt.Print("bp.Cid: ",bp.Cid,"\n")
 		}
 	}
 }

@@ -34,9 +34,9 @@ type ledger struct {
 
 func (l *ledger) Wants(k cid.Cid, priority int32, wantType pb.Message_Wantlist_WantType) {
 
-	fmt.Print("---ledger.go...Wants---\n")
-	fmt.Print(" peer ", l.Partner, " wants ", k, "\n")
-	fmt.Print("\n")
+	//fmt.Print("---ledger.go...Wants---\n")
+	//fmt.Print(" peer ", l.Partner, " wants ", k, "\n")
+	//fmt.Print("\n")
 
 	// to save in CSV file:
 	//////////////////////////////////////////////////////////////////
@@ -47,17 +47,21 @@ func (l *ledger) Wants(k cid.Cid, priority int32, wantType pb.Message_Wantlist_W
 	cid := fmt.Sprint(k)
 	peerid := fmt.Sprint(l.Partner)
 
+	//engine := &Engine{} // create an instance
+	//foundVar := engine.MessageReceived()
+	//fmt.Print("testVar: ",foundVar,"\n\n")
+
 	data := [][]string{
 		{peerid, cid, timeStamp},
 	}
 	headers := [][]string{
-		{"peerID", "CID", "timestamp"},
+		{"peerID", "CID", "timestamp","Found/notFound"},
 	}
 
 	// check if file exists
 	// if yes, then dont write headers
 	// if no, then write headers
-	info, err := os.Stat("records.csv")
+	_, err := os.Stat("records.csv")
 	if os.IsNotExist(err) { // if file doesnt exists
 		// Create CSV File
 		file, err := os.OpenFile("records.csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -94,7 +98,6 @@ func (l *ledger) Wants(k cid.Cid, priority int32, wantType pb.Message_Wantlist_W
 		}
 
 	}
-	println("ignore:",info)
 	/*
 	// Create CSV File
 	file, err := os.OpenFile("records.csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
